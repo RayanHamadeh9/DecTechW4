@@ -1,28 +1,41 @@
-import bodyParser from "body-parser";
-import express, { Request, Response } from "express";
-import { REGISTRY_PORT } from "../config";
+import express, { Request, Response } from 'express';
+import { REGISTRY_PORT } from '../config';
 
 export type Node = { nodeId: number; pubKey: string };
 
-export type RegisterNodeBody = {
-  nodeId: number;
-  pubKey: string;
-};
-
+// Define the GetNodeRegistryBody type that the test is looking for
 export type GetNodeRegistryBody = {
   nodes: Node[];
 };
 
+// Memory storage for registered nodes
+const nodes: Node[] = [];
+
 export async function launchRegistry() {
-  const _registry = express();
-  _registry.use(express.json());
-  _registry.use(bodyParser.json());
+  const app = express();
+  app.use(express.json());
 
-  // TODO implement the status route
-  // _registry.get("/status", (req, res) => {});
+  // Route to check the registry's status
+  app.get('/status', (req: Request, res: Response) => {
+      res.send("live");
+  });
 
-  const server = _registry.listen(REGISTRY_PORT, () => {
-    console.log(`registry is listening on port ${REGISTRY_PORT}`);
+  // Route to register a new node
+  app.post('/registerNode', (req: Request, res: Response) => {
+      const { nodeId, pubKey } = req.body;
+      const node: Node = { nodeId, pubKey };
+      nodes.push(node);
+      res.status(201).json({ message: 'Node registered successfully', node });
+  });
+
+  // Route to get all registered nodes
+  app.get('/getNodeRegistry', (req: Request, res: Response) => {
+      const response: GetNodeRegistryBody = { nodes };
+      res.status(200).json(response);
+  });
+
+  const server = app.listen(REGISTRY_PORT, () => {
+      console.log(`Registry server listening on port ${REGISTRY_PORT}`);
   });
 
   return server;
